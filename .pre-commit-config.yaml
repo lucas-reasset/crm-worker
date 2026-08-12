@@ -1,0 +1,16 @@
+# Local git hooks. Inert until you run `pre-commit install`. Keep revs current with
+# `pre-commit autoupdate`. JS/TS repo: only the language-agnostic hygiene hooks live
+# here — lint/format stays owned by the repo's own toolchain (`npm run verify`), not
+# duplicated as a hook.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: mixed-line-ending

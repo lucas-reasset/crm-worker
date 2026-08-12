@@ -1,0 +1,33 @@
+# Dependabot — weekly dependency updates. This file is per-repo (GitHub does not
+# inherit it from the `.github` repo), so it ships in every repo.
+#
+# `cooldown.default-days: 7` holds back releases newer than a week, dodging
+# freshly-yanked or compromised versions. Minor/patch bumps land grouped as one PR.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    # Major de npm não vem por PR automático — mesma política do crm-backend: cada um é migração
+    # dedicada, com o `verify` inteiro na mão, e PR de bot não decide isso. Isto NÃO silencia alerta
+    # de vulnerabilidade — segurança é o Dependabot alerts, canal separado.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # ⚠️ A dependência `crm-backend` é GIT PINADA POR TAG, e o pin é a decisão (BE-076): é ele que
+      # faz o deploy deste worker ser um EVENTO. Um bot que avançasse a tag desfaria exatamente essa
+      # garantia — o comportamento em produção mudaria sem ninguém deployar nada. A tag sobe à mão,
+      # junto da leitura do que mudou no `exports` e nos schemas de contrato.
+      - dependency-name: "crm-backend"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7

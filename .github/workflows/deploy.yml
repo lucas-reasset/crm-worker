@@ -1,0 +1,115 @@
+name: 'Deploy'
+
+# Mesmo desenho do deploy.yml do crm-backend — build, push pro ECR e `helm upgrade` num job só.
+# Push em `development` sobe pro ambiente de development automaticamente; produção é sempre manual
+# (workflow_dispatch com a ref em `main`), nunca autodeploy em push a main.
+#
+# ⚠️ DUAS DIFERENÇAS EM RELAÇÃO AO DEPLOY DO crm-backend, e as duas são bloqueantes hoje:
+#
+#  1. O BUILD PRECISA DE CREDENCIAL DE LEITURA do repo privado artell-ai/crm-backend — a dependência
+#     é git pinada por tag (BE-076) e o `prepare` de lá compila o dist/ durante o `npm ci`. Passa
+#     como build secret (`--secret id=gh_token`), nunca como ARG (ARG fica no histórico da imagem).
+#     O `GITHUB_TOKEN` do job NÃO serve: ele é escopado a ESTE repo.
+#  2. Nada disto existe na infra ainda: repositório ECR, ServiceAccount com IRSA, a fila + DLQ, e o
+#     segredo `/crm/<ns>/save-worker` no Secrets Manager (com a URL do ROLE RESTRITO). Ver
+#     docs/deployment.md e o REQ-0414 — este workflow falha até lá, e falha alto, que é o desejado.
+
+on:
+  push:
+    branches: [development]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".claude/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ECR_REPOSITORY: app/save-worker
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2.1.5
+
+      # main => produção (só via workflow_dispatch manual, nunca em push); qualquer
+      # outra ref (na prática, só `development`) => development.
+      - name: Set deployment context
+        id: ctx
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "namespace=production"            >> "$GITHUB_OUTPUT"
+            echo "cluster=prd-reasset-platform-eks" >> "$GITHUB_OUTPUT"
+            echo "values_file=helm/values-production.yaml" >> "$GITHUB_OUTPUT"
+          else
+            echo "namespace=development"            >> "$GITHUB_OUTPUT"
+            echo "cluster=dev-reasset-platform-eks"  >> "$GITHUB_OUTPUT"
+            echo "values_file=helm/values-development.yaml" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build + push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          # Leitura em artell-ai/crm-backend. Token de app ou PAT fine-grained; o mesmo secret que o
+          # ci.yml usa. Entra por --secret (só existe durante o RUN), nunca por --build-arg.
+          GH_TOKEN: ${{ secrets.CRM_BACKEND_READ_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secret CRM_BACKEND_READ_TOKEN ausente — sem ele o npm ci do build não clona artell-ai/crm-backend (BE-076). Ver docs/deployment.md."
+            exit 1
+          fi
+          IMAGE_URI="$REGISTRY/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          CACHE_REF="$REGISTRY/${{ env.ECR_REPOSITORY }}:cache"
+          docker buildx build \
+            --platform linux/amd64 \
+            -t "$IMAGE_URI" \
+            --secret id=gh_token,env=GH_TOKEN \
+            --cache-from "type=registry,ref=$CACHE_REF" \
+            --cache-to   "type=registry,ref=$CACHE_REF,mode=max" \
+            --push \
+            .
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --region "${{ secrets.AWS_REGION }}" \
+            --name   "${{ steps.ctx.outputs.cluster }}"
+
+      - name: Helm deploy
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          helm upgrade --install save-worker ./helm \
+            --namespace "${{ steps.ctx.outputs.namespace }}" \
+            -f helm/values.yaml \
+            -f "${{ steps.ctx.outputs.values_file }}" \
+            --set namespace="${{ steps.ctx.outputs.namespace }}" \
+            --set image.repository="$REGISTRY/${{ env.ECR_REPOSITORY }}" \
+            --set image.tag="${{ github.sha }}" \
+            --wait \
+            --timeout 10m

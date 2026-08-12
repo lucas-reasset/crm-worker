@@ -1,0 +1,21 @@
+# Uma réplica, e é escolha — não limitação. Duas seriam SEGURAS (a SQS não entrega a mesma mensagem
+# a dois receives dentro da visibilidade, e se entregasse a idempotência do banco absorveria), mas o
+# gargalo deste serviço é o Postgres, não o consumo: dobrar o consumidor dobra a disputa por conexão
+# para ganhar nada. Se a fila começar a acumular, o número a subir primeiro é `SQS_MAX_MESSAGES`.
+replicas: 1
+
+env:
+  - name: LOG_LEVEL
+    value: "info"
+  - name: DB_SCHEMA
+    value: "crm"
+  - name: DB_POOL_MAX
+    value: "5"
+  - name: AWS_REGION
+    value: "us-east-1"
+  - name: SQS_WAIT_TIME_SECONDS
+    value: "20"
+  - name: SQS_MAX_MESSAGES
+    value: "10"
+  - name: SQS_VISIBILITY_TIMEOUT
+    value: "300"

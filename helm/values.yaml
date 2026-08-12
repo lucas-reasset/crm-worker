@@ -1,0 +1,81 @@
+# Defaults do save-worker. Sobrescritos por ambiente em values-development.yaml /
+# values-production.yaml e por --set image.tag=<git-sha> vindo do deploy.yml.
+#
+# ESTE CHART NÃO É UMA CÓPIA DO chart do crm-backend, e as diferenças são todas o mesmo fato: ele
+# não serve, ele consome (SW-007).
+#   · sem `Service` e sem `Ingress`  — não há porta;
+#   · sem `readinessProbe`/`livenessProbe` — não há endpoint que os responda, e um `/health`
+#     inventado responderia 200 com o loop travado (foi o bug da SW-003);
+#   · `nodePool: cpu-spot` em vez de on-demand — ver o comentário abaixo, que INVERTE o do chart da
+#     API de propósito.
+name: "save-worker"
+namespace: ""
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+# Worker de fila é leve: o trabalho caro (LLM de visão, bureau) acontece nos workers Python. Aqui é
+# JSON→SQL, e o gargalo é o banco. Pequeno de propósito — subir CPU não aumenta vazão.
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+
+# NodePool do Karpenter (components/eks-platform/platform.tf, repo Infraestrutura).
+#
+# ⚠️ SPOT, e isto INVERTE a escolha do chart do crm-backend de propósito. Lá o comentário diz
+# on-demand porque a API é síncrona e uma preempção de 2 min no meio de requests em andamento não é
+# aceitável. Aqui é o caso oposto, e é o caso que o desenho já cobre: preempção manda SIGTERM, o
+# handler chama `parar()`, o loop termina o ciclo corrente e sai; a mensagem que estivesse a meio
+# caminho volta pela visibilidade da SQS e a idempotência do banco absorve (SW-001). Pagar
+# on-demand por isso seria pagar para não usar a garantia que já se construiu.
+nodePool: "cpu-spot"
+
+# Tem de exceder o pior caso de UM ciclo: até 20 s de long polling + até 10 mensagens, cada uma numa
+# transação. 60 s dá folga larga. Se o grace period for curto, o kubelet manda SIGKILL no meio de uma
+# transação — o Postgres faz rollback (nada corrompe), mas a mensagem só volta quando a visibilidade
+# expira, e o log fica sem a linha de encerramento.
+terminationGracePeriodSeconds: 60
+
+# ⛔ Criada pelo Terraform (modules/aws/kubernetes/service, repo Infraestrutura), com a annotation
+# IRSA já anexada — este chart só REFERENCIA o nome, nunca cria a ServiceAccount. A policy do IRSA
+# precisa de sqs:ReceiveMessage, sqs:DeleteMessage e sqs:GetQueueAttributes NA FILA DE RETORNO.
+# Ela não existe hoje: ver docs/deployment.md e o REQ-0414.
+serviceAccount:
+  name: "save-worker"
+
+# Config não-sensível. Segredos vêm do ExternalSecret — nunca aqui.
+#
+# ⚠️ `DATABASE_URL` é segredo E é o ponto mais importante deste deploy: em produção ela tem de ser a
+# do ROLE RESTRITO, não a do dono do schema. É o que torna "o canônico só recebe o validado" uma
+# PERMISSÃO em vez de convenção (D-068). Enquanto o segredo em Secrets Manager carregar o usuário
+# atual, o rail é papel — REQ-0412.
+env:
+  - name: LOG_LEVEL
+    value: "info"
+  - name: DB_SCHEMA
+    value: "crm"
+  # Pool pequeno: o worker processa uma mensagem por vez, sequencialmente (dez transações
+  # concorrentes no mesmo pool disputariam conexão para ganhar nada — a vazão vem do long polling).
+  - name: DB_POOL_MAX
+    value: "5"
+  - name: AWS_REGION
+    value: "us-east-1"
+  # 20 s é o máximo da SQS e evita receive vazio em loop apertado.
+  - name: SQS_WAIT_TIME_SECONDS
+    value: "20"
+  - name: SQS_MAX_MESSAGES
+    value: "10"
+  # ⚠️ Tem de ser COERENTE com a janela de `resgatar_mensagens_travadas()` (90 min no banco): janela
+  # MENOR que a visibilidade faz o Postgres declarar `falhou` uma mensagem ainda em processamento, e
+  # passam a existir duas verdades sobre o mesmo trabalho. Fixar o timeout na própria fila (Terraform)
+  # é pré-requisito — REQ-0414.
+  - name: SQS_VISIBILITY_TIMEOUT
+    value: "300"

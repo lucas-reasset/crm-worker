@@ -1,0 +1,50 @@
+{
+  "name": "save-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Consome o retorno do (pré-)enriquecimento da SQS e o grava no Postgres do CRM. D-068 · BE-074",
+  "license": "UNLICENSED",
+  "main": "dist/index.js",
+  "// verify": "verify é o Definition of Done numa palavra — é o que tem de estar verde antes de você dizer pronto, e é o único comando que o CI roda (.github/workflows/ci.yml). Ele chama `coverage`, não `test`: `test` é vitest sem --coverage, então os pisos de 100% do vitest.config.ts não disparariam em lugar nenhum. Uma definição, dois chamadores, não deriva. É o mesmo desenho do crm-backend, menos duas coisas que não têm análogo aqui: o `openapi:check` (este serviço não publica contrato, consome o de lá) e o `migracao:check` (não há migration — o schema nasce em crm-backend/modelo/). O `espelho:check` entrou em 12/08/2026 pela SW-013.",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "// tdd": "SW-013 — o loop vermelho→verde. É `vitest` em watch como o test:watch, mas com reporter verbose: o ponto do vermelho é LER o nome do teste que falhou antes de escrever a linha que o resolve, e o reporter default esconde os nomes quando tudo passa. Aceita filtro: `npm run tdd -- tests/unit/normalizar.test.ts`.",
+    "tdd": "vitest --watch --reporter=verbose",
+    "coverage": "vitest run --coverage",
+    "// espelho:check": "SW-013 — o par estrutural do piso de cobertura. O piso pergunta 'esta linha rodou?'; este pergunta 'alguém escreveu um teste PARA este arquivo?'. São perguntas diferentes, e neste repo a diferença tem endereço: consumidor→contrato e salvar→normalizar, então módulo novo chega a 100% de carona no teste de quem o importa. O mesmo módulo roda no hook PreToolUse (scripts/hook-precheck-tdd.sh), que é quem cobra a ORDEM.",
+    "espelho:check": "node scripts/check-espelho.mjs",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "verify": "npm run format:check && npm run typecheck && npm run lint && npm run espelho:check && npm run coverage && npm run audit:prod"
+  },
+  "// crm-backend": "BE-076 — dependência GIT PINADA POR TAG, não por branch. O pin é o que faz o deploy do worker ser um evento: sem ele, um merge no crm-backend mudaria o comportamento deste serviço em produção sem ninguém deployar nada. O `prepare` de lá compila o dist/ no install. A tag v0.2.0 EXISTE desde 12/08/2026 (ponta de origin/development, e7bd562), então `npm install`/`npm ci` resolvem por ela e o `prepare` de lá compila o dist/ durante o install. ⚠️ Se o clone falhar em \"Repository not found\", é o insteadOf do seu git não cobrir a forma `ssh://git@github.com/` que o npm emite — ver o README. Para desenvolver contra o repo irmão ao vivo: `npm i --no-save ../crm-backend` (symlink; reescreve o lock, descarte antes de commitar).",
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.1096.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "crm-backend": "github:artell-ai/crm-backend#v0.2.0"
+  },
+  "// @types/pg": "O DRIVER não é dependência deste repo e o eslint proíbe importá-lo (ver eslint.config.js): quem abre conexão é o crm-backend, e o `pg` chega hoisted junto dele. Os TIPOS ficam porque as assinaturas que este worker importa os mencionam — `PoolClient` aparece em `database/transaction.d.ts` e no repository. Numa instalação real (dependência git, não symlink) as devDeps do crm-backend NÃO são instaladas, então o `@types/pg` dele não existiria e o typecheck daqui quebraria. É por isso que ele é declarado aqui e o driver não.",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^9.17.0",
+    "prettier": "^3.9.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

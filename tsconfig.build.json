@@ -1,0 +1,19 @@
+{
+  // Só o BUILD, e a diferença é o que ele NÃO tem: `tests/`. Espelha o par
+  // tsconfig.json/tsconfig.build.json do crm-backend.
+  //
+  // `rootDir: "src"` vive aqui e não no base porque é o que mantém a saída em `dist/index.js` — o
+  // que o `main`, o `start` e o `CMD` do Dockerfile apontam. No base, com `tests/` incluído, o
+  // `rootDir` teria de virar `"."` e a saída escorregaria para `dist/src/index.js`; é exatamente a
+  // cicatriz que o Dockerfile do crm-backend documenta ("o `start` está defasado"). Um arquivo a
+  // mais custa menos que essa divergência.
+  //
+  // Sem `declaration`: ninguém importa este pacote. Quem publica `.d.ts` é o crm-backend, porque
+  // ELE é importado (BE-076) — aqui seria emissão para o lixo.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
+}

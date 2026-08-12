@@ -1,0 +1,33 @@
+{
+  // Este tsconfig é o do TYPECHECK, e cobre `src/` **e `tests/`** — como o do crm-backend. A versão
+  // anterior incluía só `src/`, então um erro de tipo dentro de um teste passava pelo `verify`
+  // inteiro: o `tsc --noEmit` nem olhava o arquivo, e o vitest transpila sem checar tipo. O teste é
+  // onde mais se escreve dublê, e dublê é justamente onde o tipo errado se esconde.
+  //
+  // Quem compila é o `tsconfig.build.json` (só `src/`, com `rootDir`). Dois arquivos, dois papéis.
+  "compilerOptions": {
+    "target": "ES2022",
+    // `Node16` (não `commonjs`) porque é o que faz o TypeScript HONRAR o mapa `exports` do
+    // crm-backend (BE-076). Com `moduleResolution: node`, ele ignoraria o mapa, não acharia os
+    // `.d.ts` de `crm-backend/database/db` e o worker compilaria contra `any` — perdendo exatamente
+    // as assinaturas que a BE-074 quer compartilhar. Emite CJS, como o backend.
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "lib": ["ES2022"],
+    "outDir": "dist",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

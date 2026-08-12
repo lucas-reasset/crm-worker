@@ -1,0 +1,16 @@
+{
+  "//": "Um hook só, e a ausência do segundo é a decisão: o crm-backend tem DOIS (o de drift de migration, BE-014, e o de teste-primeiro, BE-077); aqui não há migration nenhuma — o schema em que este worker escreve nasce em crm-backend/modelo/ —, então copiar o de migration seria postar guarda numa porta que não existe. O que fica é o de teste-primeiro (SW-013), e ele não reimplementa a regra: delega a scripts/check-espelho.mjs --arquivo, o mesmo módulo que o `npm run espelho:check` do verify roda. O verify julga o REPO todo; o hook julga a ORDEM, arquivo por arquivo, na hora da escrita. Só hooks aqui — nada de bloco `permissions`: este repo não tem remote nem fluxo de PR, então permissão seria só pré-responder prompt que você já responde. O comando procura o script nos dois lugares possíveis porque a sessão tanto pode abrir no workspace guarda-chuva (reasset-group/) quanto neste repo direto; e o script resolve o resto pelo file_path do payload, nunca pelo cwd. É `exec` dentro de `if`, e não `[ -f x ] && bash x || exit 0`: aquela forma ENGOLE o exit 2 (a cadeia && falha, o || dispara) — o hook falharia aberto justo no caso que existe para barrar.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "s=\"$CLAUDE_PROJECT_DIR/save-worker/scripts/hook-precheck-tdd.sh\"; if [ ! -f \"$s\" ]; then s=\"$CLAUDE_PROJECT_DIR/scripts/hook-precheck-tdd.sh\"; fi; if [ -f \"$s\" ]; then exec bash \"$s\"; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

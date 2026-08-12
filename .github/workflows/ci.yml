@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      # ⚠️ O PASSO QUE NÃO EXISTE NO CI DO crm-backend, e a razão de ele existir aqui: a dependência
+      # `crm-backend` é GIT, e o repositório é PRIVADO (BE-076). Sem credencial, `npm ci` falha em
+      # "Repository not found" — que é a mensagem menos útil possível, porque parece erro de nome.
+      #
+      # `insteadOf` reescreve `git+ssh://git@github.com/...` para HTTPS com token, o que faz o npm
+      # clonar sem chave SSH nem agente. O token tem de ter LEITURA no artell-ai/crm-backend:
+      # o `GITHUB_TOKEN` do job NÃO serve (ele é escopado a ESTE repo). Use um token de app ou um
+      # PAT fine-grained no secret `CRM_BACKEND_READ_TOKEN` — ver docs/deployment.md.
+      - name: git auth para a dependência privada
+        env:
+          TOKEN: ${{ secrets.CRM_BACKEND_READ_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::secret CRM_BACKEND_READ_TOKEN ausente — sem ele o npm ci não clona artell-ai/crm-backend (BE-076). Ver docs/deployment.md."
+            exit 1
+          fi
+          git config --global url."https://x-access-token:$TOKEN@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://x-access-token:$TOKEN@github.com/".insteadOf "git@github.com:"
+
+      - name: install
+        run: npm ci
+
+      # Um passo só, porque `verify` É o Definition of Done (package.json, SW-012): format + typecheck
+      # + lint + coverage(100%) + audit de produção. O CI não repete a lista — se ela mudar, muda num
+      # lugar só e os dois lados andam juntos. Rodar o mesmo comando aqui e na sua máquina é o que
+      # impede o local-verde/CI-vermelho.
+      - name: verify
+        run: npm run verify

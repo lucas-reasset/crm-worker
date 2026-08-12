@@ -1,0 +1,10 @@
+# Thin caller of the org reusable gitleaks secret scan. Runs as its own job
+# (independent of `ci`). Pin @main to a tag/SHA for production stability.
+name: gitleaks
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  gitleaks:
+    uses: artell-ai/.github/.github/workflows/gitleaks.yml@main

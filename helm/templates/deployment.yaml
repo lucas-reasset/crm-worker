@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.name }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  # Recreate, não RollingUpdate: durante um rolling, dois pods consomem a mesma fila por alguns
+  # segundos. Isso é SEGURO (a idempotência do banco absorve, e a SQS não entrega a mesma mensagem a
+  # dois receives dentro da visibilidade), mas não compra nada — não há requisição para não deixar
+  # cair. Recreate mantém a leitura do log linear: um consumidor por vez.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      # Tem de exceder o pior caso de UM ciclo (long polling + as mensagens do lote). Ver values.yaml.
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      nodeSelector:
+        workload-type: {{ .Values.nodePool }}
+      tolerations:
+        - key: workload-type
+          operator: Equal
+          value: {{ .Values.nodePool }}
+          effect: NoSchedule
+      containers:
+        - name: {{ .Values.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # SEM `ports`, SEM `readinessProbe`, SEM `livenessProbe` — e isto é decisão (SW-007), não
+          # esquecimento. Este processo não escuta porta: ninguém o chama, ele PUXA da SQS. Um
+          # `/health` aqui seria um servidor HTTP inventado só para satisfazer o kubelet, e
+          # responderia 200 alegremente com o loop travado — foi literalmente o bug da SW-003.
+          #
+          # A liveness que importa é "a fila está sendo drenada", e ela não se lê de dentro do pod:
+          # lê-se em `ApproximateAgeOfOldestMessage`. O alarme é PRÉ-REQUISITO DE INFRA (REQ-0414);
+          # sem ele, este é o único serviço do stack sem detecção de travamento.
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu | quote }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu | quote }}
+              memory: {{ .Values.resources.limits.memory }}
+          # DATABASE_URL (a do ROLE RESTRITO — D-068) e SQS_QUEUE_URL vêm daqui.
+          envFrom:
+            - secretRef:
+                name: {{ .Values.name }}-secret
+                optional: false
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: ENVIRONMENT
+              value: {{ .Values.namespace }}
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}

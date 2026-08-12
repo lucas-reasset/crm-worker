@@ -1,0 +1,7 @@
+# Revisões que só mexeram em formato — o blame as ignora e mostra o autor real
+# da linha, não quem rodou o formatador.
+#
+# Ative de uma vez (o git não lê este arquivo sozinho):
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# (vazio: nenhuma revisão só-de-formato até agora)

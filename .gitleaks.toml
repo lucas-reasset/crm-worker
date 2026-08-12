@@ -1,0 +1,22 @@
+title = "gitleaks — save-worker"
+
+# Estende as regras padrao do gitleaks (nao substitui, so adiciona excecoes abaixo).
+[extend]
+useDefault = true
+
+# `scripts/role-dev.sql` cria o role restrito de DESENVOLVIMENTO com senha literal. Ela e fake por
+# desenho, nao por descuido: o cabecalho do script diz em letras maiusculas que ele nao serve para
+# producao, o role vive num Postgres local em docker, e o script inteiro existe para exercitar o
+# GRANT de verdade (o de producao nasce fora daqui -- REQ-0412). Sem esta excecao, o gitleaks barra
+# todo commit que toque no script, e a saida seria trocar a senha literal por uma variavel -- o que
+# tornaria o script menos util (ele deixaria de rodar com um `psql < arquivo`) sem esconder segredo
+# nenhum, porque nao ha segredo.
+[[allowlists]]
+description = "Senha do role de DEV em scripts/role-dev.sql -- local, docker, nunca producao"
+paths = ['''scripts/role-dev\.sql$''']
+
+# `.env.example` carrega placeholders (`test`/`trocar`) para o LocalStack e para o Postgres local.
+# Sao o valor que o LocalStack ESPERA -- credencial que nao autentica em lugar nenhum.
+[[allowlists]]
+description = "Placeholders do .env.example (LocalStack/Postgres local)"
+paths = ['''\.env\.example$''']
