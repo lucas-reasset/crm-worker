@@ -1,13 +1,10 @@
 # CODEOWNERS — auto-routes PR reviews by path. GitHub uses the LAST matching
-# pattern, so put specific paths after broad ones. Hardened-tier repos require
-# code-owner review on the default branch.
+# pattern, so put specific paths after broad ones.
 #
-# Commented out until an owning team is granted WRITE access to this repo.
-# A CODEOWNERS entry errors unless the team exists, is visible, AND can write here.
-# Existing org teams:
-#   @artell-ai/api-owner    @artell-ai/data-science  @artell-ai/devs    @artell-ai/infra
-#   @artell-ai/product      @artell-ai/guidance      @artell-ai/wiki-maintainers
+# An entry only takes effect once the owner has WRITE access to this repo.
+# Until then GitHub silently ignores it — no error is shown on the PR.
 #
-# To enable: pick the owning team, grant it write access, then uncomment, e.g.:
-#   gh api -X PUT /orgs/artell-ai/teams/devs/repos/artell-ai/save-worker -f permission=push
-# *                     @artell-ai/devs
+# Org teams: @artell-ai/devs   @artell-ai/product
+#            @artell-ai/infra  @artell-ai/business-users-power-bi
+
+*                       @lucas-reasset
