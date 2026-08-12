@@ -4,7 +4,7 @@
 # An entry only takes effect once the owner has WRITE access to this repo.
 # Until then GitHub silently ignores it — no error is shown on the PR.
 #
-# Org teams: @artell-ai/devs   @artell-ai/product
-#            @artell-ai/infra  @artell-ai/business-users-power-bi
+# Org teams: @artell-ai/engineering  @artell-ai/product
+#            @artell-ai/infrastructure  @artell-ai/analytics
 
 *                       @lucas-reasset
