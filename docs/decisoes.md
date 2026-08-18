@@ -364,3 +364,21 @@ dos dois gates).
 **Executor:** `npm run espelho:check` dentro do `npm run verify` (portanto no CI e no `make ci`) + o
 hook `PreToolUse` de [`.claude/settings.json`](../.claude/settings.json), que sai com `exit 2` e
 devolve o caminho do teste que falta.
+
+## SW-014 — O mock do retorno entra pelo contrato e pelo gravador, nunca por `INSERT`
+
+**Data:** 2026-08-18
+
+**Decisão.** [`scripts/mock-retorno.ts`](../scripts/mock-retorno.ts) faz o papel dos workers externos — gera um payload de retorno por mensagem `publicado` — e o empurra pelo **caminho de produção**: `interpretarRetorno` (SW-011) e depois `salvarRetorno`. Nada de SQL próprio. É o par de `crm-backend/scripts/mock-enriquecimento.ts`, que cria as rodadas e as mensagens (BE-149); a fronteira entre os dois é a do papel — **este repo não cria mensagem, e o backend não inventa resultado**.
+
+Três consequências que valem estar escritas:
+
+1. **Só o payload é mock.** A normalização (SW-004), a derivação da D-068, a transação e a trilha com ator são as de verdade. Contrato que mudar no crm-backend quebra o mock junto com o worker — é o mesmo alarme da SW-011, agora disparável sem fila.
+2. **Sem SQS.** O corpo vai direto ao `interpretarRetorno`; o transporte é o `consumidor.ts` e exercitá-lo é outro exercício (LocalStack + `make fila`). Mockar dois eixos de uma vez teria confundido falha de contrato com falha de entrega.
+3. **Conexão herdada do irmão.** Sem `DATABASE_URL`/`DB_SCHEMA` no ambiente, o script lê as duas do `.env` do `crm-backend` — em dev o banco é o dele, é de lá que sai o schema (BE-014). E `NODE_ENV` entra como `production` quando ausente: o logger do backend só pede `pino-pretty` em `development`, e este repo não tem essa dependência (nem precisa — o worker roda em produção).
+
+Roda como o usuário daquele `.env` (o dono do schema), **não** como o role restrito: a prova por negação do `GRANT` é outra e já existe ([`scripts/provar-grant.sql`](../scripts/provar-grant.sql), REQ-0412). Misturar as duas faria uma falha de permissão parecer erro de mock.
+
+**Por quê não um seed com SQL.** Porque ele grava a forma que o autor do seed imaginou. A tela passaria a exibir afirmação com `en_status`/`en_origem` escolhidos à mão — exatamente o que a D-068 tirou do payload para que ninguém pudesse escolher — e o primeiro bug seria descoberto quando o worker real chegasse com forma diferente. No primeiro uso, em 18/08/2026, o `--seco` reprovou dois payloads antes de qualquer escrita (`nr_registros` `const 0` em score/prospecção; `nr_processo` sem máscara).
+
+**Executor:** `npm run mock:retorno -- --seco`, que valida todo payload contra os contratos publicados e sai 1 se algum não casar. Não entra no `verify` de propósito — é ferramenta de bancada, e o `verify` não tem banco.
