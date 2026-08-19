@@ -1,10 +1,22 @@
-# CODEOWNERS — auto-routes PR reviews by path. GitHub uses the LAST matching
+# CODEOWNERS: auto-routes PR reviews by path. GitHub uses the LAST matching
 # pattern, so put specific paths after broad ones.
 #
-# An entry only takes effect once the owner has WRITE access to this repo.
-# Until then GitHub silently ignores it — no error is shown on the PR.
+# An entry is silently ignored (no error anywhere on the PR) unless the owner
+# both EXISTS and has WRITE access to this repo. A team that was renamed or
+# never existed fails that same quiet way, so copy slugs from the list below
+# instead of guessing them:
 #
-# Org teams: @artell-ai/engineering  @artell-ai/product
-#            @artell-ai/infrastructure  @artell-ai/analytics
+#   @artell-ai/engineering      @artell-ai/product
+#   @artell-ai/infrastructure   @artell-ai/analytics
+#   @artell-ai/domain-builders  @artell-ai/bot-managers
+#
+# Re-check the list before trusting it, because teams get created and deleted:
+#   gh api /orgs/artell-ai/teams --paginate -q '.[].slug'
+#
+# On the hardened tier (`protection_tier=hardened`) a code-owner approval is
+# required, and GitHub never counts the PR author as an owner of their own PR.
+# A team owner absorbs that (any other member can approve), a lone individual
+# owner does not: their own PRs can then only land by an org-admin bypass.
+# So prefer a team, or name two or more individuals.
 
 *                       @lucas-reasset
