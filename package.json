@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/index.ts",
+    "// mock:retorno": "MOCK do RETORNO de (pré-)enriquecimento — o par de `crm-backend/scripts/mock-enriquecimento.ts` (rode aquele primeiro). Faz o papel dos workers externos: gera um payload por mensagem `publicado` e o empurra pelo caminho de produção — `interpretarRetorno` (contrato publicado) + `salvarRetorno` (gravador real). Só o payload é mock; a normalização, a derivação da D-068, a transação e a trilha são as de verdade, então contrato que mudar no backend quebra isto junto com o worker. Sem SQS e sem promoção ao canônico. `-- --seco` só valida.",
+    "mock:retorno": "tsx scripts/mock-retorno.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",

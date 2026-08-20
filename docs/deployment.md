@@ -1,9 +1,14 @@
 # Deploy do save-worker
 
-> **Estado em 06/08/2026: este serviço NÃO está deployado, e nada aqui foi executado ainda.** O chart
-> e o workflow existem e estão escritos; o que falta é infra, e está listado abaixo. O rastreio de
-> estado é o [REQ-0414](../../produto/requisitos/REQ-0414.yaml) — este documento explica o *porquê* de
-> cada item, o requisito é quem diz se está feito.
+> **Estado em 12/08/2026: este serviço NÃO está deployado.** O chart e os dois workflows existem e
+> estão escritos; o que falta é infra, e está listado abaixo. O rastreio de estado é o
+> [REQ-0414](../../produto/requisitos/REQ-0414.yaml) — este documento explica o *porquê* de cada item,
+> o requisito é quem diz se está feito.
+>
+> **O que mudou em 12/08:** o repositório passou a existir (`artell-ai/save-worker`, privado) e o
+> código foi enviado nas três branches, então **o CI deixou de ser um arquivo que nunca executa** — e
+> a primeira execução já disse o que falta. A tag `v0.2.0` do crm-backend também existe. O que continua
+> faltando, agora com prova de CI, é o **secret** da §2, e depois dele o Terraform da §3/§4.
 
 O caminho é o mesmo do crm-backend: push em `development` builda, sobe pro ECR e faz `helm upgrade`
 no cluster de development; produção é `workflow_dispatch` manual com a ref em `main`. Ver
@@ -51,9 +56,24 @@ crm-backend compila o `dist/` durante o `npm ci`, então **o build não roda sem
 - Localmente o caminho é outro e não precisa de token: `--ssh default` (o `docker-compose.yml` já
   passa).
 
-**E a tag tem de existir.** Hoje `v0.2.0` não existe no remote, então `npm ci` falha em qualquer
-lugar — CI incluído. Ela sai do commit que traz a BE-076:
-`cd ../crm-backend && git tag v0.2.0 && git push origin v0.2.0`.
+✅ **A tag já existe** desde 12/08/2026 — `v0.2.0`, anotada, na ponta de `origin/development`
+(`e7bd562`), que é onde a BE-076 está; a `main` ainda não a tem. `npm install`, `npm ci` e o
+`npm ci --dry-run` resolvem por ela, verificados no mesmo dia.
+
+⛔ **O secret continua sendo o bloqueio, e agora há prova dele.** O primeiro push (12/08/2026) rodou o
+CI de verdade nas três branches: `gitleaks` **passou** e os três `ci` **falharam no passo de
+credencial**, com a mensagem que o próprio workflow escreve — *"secret CRM_BACKEND_READ_TOKEN
+ausente"*. Isso é o desenho funcionando: ele falha alto e nomeia o que falta, em vez de morrer num
+`npm ci` com *"Repository not found"*. Para destravar:
+
+```bash
+gh secret set CRM_BACKEND_READ_TOKEN --repo artell-ai/save-worker   # cola o PAT fine-grained
+gh run rerun --repo artell-ai/save-worker --failed
+```
+
+Mintar o token é ato humano: PAT fine-grained com **Contents: Read** em `artell-ai/crm-backend`, ou um
+token de GitHub App. Não use um token de usuário de escopo amplo (o do `gh auth`, por exemplo) — ele dá
+escrita em tudo o que a pessoa alcança e rotaciona sem avisar.
 
 ## 3. ⛔ Fila, DLQ e o `VisibilityTimeout` — no Terraform
 
