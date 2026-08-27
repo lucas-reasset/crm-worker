@@ -68,6 +68,11 @@ env:
     value: "5"
   - name: AWS_REGION
     value: "us-east-1"
+  # ⚠️ `REDIS_URL` não tem default aqui de propósito: o endpoint é POR AMBIENTE, e vive em
+  # values-development.yaml / values-production.yaml — mesmo desenho do chart do crm-backend. É o
+  # Valkey Serverless compartilhado da plataforma, e não é segredo (endpoint, não credencial).
+  # O relógio (SW-016/SW-017) não sobe sem ela, e isso é deliberado.
+
   # 20 s é o máximo da SQS e evita receive vazio em loop apertado.
   - name: SQS_WAIT_TIME_SECONDS
     value: "20"

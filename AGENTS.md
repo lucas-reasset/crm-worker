@@ -16,14 +16,21 @@ o crm-backend, e o caminho é o `AGENTS.md` de lá.
 
 # O que é
 
-O executor do CRM **fora de requisição** — o que roda sem ninguém clicar. Hoje tem uma entrada
-(a fila); a **SW-016 decidiu a segunda**, o relógio do sistema, e ela ainda não existe em código:
-quando existir, um tique varre `tarefa.dt_prazo` vencido e aplica a transição (REQ-0603). Ler a
-seção acima antes: o relógio também não ganha SQL próprio nem reescreve regra — ele chama a
-superfície pública do crm-backend, como o gravador da fila já faz.
+O executor do CRM **fora de requisição** — o que roda sem ninguém clicar. São **duas entradas de
+trabalho**, e nenhuma é requisição:
 
-A entrada que existe hoje é o consumo da fila de retorno do (pré-)enriquecimento: lê a mensagem na
-SQS, escreve **três coisas e nada mais** — uma `enriquecimento_consulta` por consulta (a tentativa e
+1. **A fila** — alguém publicou uma mensagem na SQS. É o consumo do retorno do (pré-)enriquecimento,
+   descrito abaixo.
+2. **O calendário** — ninguém fez nada durante um prazo. É o **relógio do sistema** (SW-016), e o
+   tique existe: BullMQ sobre o Valkey compartilhado da plataforma (SW-017), em
+   [`src/relogio.ts`](src/relogio.ts). Hoje ele roda só o `batimento`; a varredura de
+   `tarefa.dt_prazo` vencido entra quando o `GRANT` alcançar `tarefa`/`negociacao` (REQ-0603).
+
+Ler a seção acima antes de escrever varredura: o relógio **não** ganha SQL próprio nem reescreve
+regra — ele recebe uma `Varredura` injetada, cujo corpo chama a superfície pública do crm-backend,
+como o gravador da fila já faz.
+
+Sobre a fila, em detalhe: lê a mensagem na SQS e escreve **três coisas e nada mais** — uma `enriquecimento_consulta` por consulta (a tentativa e
 o custo), uma `pessoa_informacao` por achado (a afirmação), e o fechamento da `importacao_credor` —
 tudo num commit só, e apaga da fila **depois** do commit.
 

@@ -13,6 +13,13 @@ env:
     value: "5"
   - name: AWS_REGION
     value: "us-east-1"
+  # O relógio (SW-016/SW-017). Valkey Serverless compartilhado da plataforma (base/cache.tf,
+  # Infraestrutura) — o MESMO cache do crm-backend, então não há provisionamento novo. `rediss://`
+  # (dois s) liga TLS no ioredis. As chaves do BullMQ ficam sob o prefixo hash-tagged
+  # `{crm-worker}`: hash tag porque o Serverless é cluster por dentro, e prefixo próprio porque o
+  # keyspace é compartilhado com o backend e o reasset-scrapers.
+  - name: REDIS_URL
+    value: "rediss://prd-reasset-platform-cache-1etlty.serverless.use1.cache.amazonaws.com:6379"
   - name: SQS_WAIT_TIME_SECONDS
     value: "20"
   - name: SQS_MAX_MESSAGES

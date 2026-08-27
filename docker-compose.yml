@@ -75,6 +75,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@host.docker.internal:5432/reasset}
       DB_SCHEMA: ${DB_SCHEMA:-crm}
       DB_POOL_MAX: ${DB_POOL_MAX:-5}
+      # O relógio (SW-017). Em dev o Redis é o do docker-compose do crm-backend — suba aquele
+      # stack antes, como já vale para o Postgres.
+      REDIS_URL: ${REDIS_URL:-redis://host.docker.internal:6379}
       SQS_QUEUE_URL: http://localstack:4566/000000000000/fila-save
       SQS_ENDPOINT: http://localstack:4566
       AWS_REGION: ${AWS_REGION:-us-east-1}

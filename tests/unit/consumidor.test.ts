@@ -8,6 +8,7 @@ import { retornoPreDocumento } from "../fixtures";
 
 const config: Config = {
   filaUrl: "http://localhost:4566/000000000000/fila-save",
+  redisUrl: "redis://localhost:6379",
   regiao: "us-east-1",
   endpoint: "http://localhost:4566",
   esperaSegundos: 20,

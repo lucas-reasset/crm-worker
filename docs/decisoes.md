@@ -448,3 +448,38 @@ consulta só.
 
 **Executor:** o `REQ-0603` — `decisao_ref: SW-016`, e sondas exigindo `src/relogio.ts` vivo no
 `index.ts` e o GRANT em `tarefa`. Vermelhas, dizem ao REQ-0208: decidido, não feito.
+
+---
+
+## SW-017 — O relógio é BullMQ sobre o Valkey que já existe; a unicidade sai do `replicas: 1`
+
+**Data:** 2026-08-27
+
+**Decisão.** O tique da SW-016 é **BullMQ** (`upsertJobScheduler`) sobre o **ElastiCache Serverless
+compartilhado da plataforma** — o mesmo do crm-backend, `ioredis` já deduplicado, nada novo a
+provisionar: a conta que a SW-016 evitou no EventBridge segue evitada. `REDIS_URL` é **obrigatória** e
+falha no boot — sem ela o processo consumiria a fila sem ser o relógio, o "some sem sinal" da SW-016.
+
+**O que isto EMENDA na SW-016.** Lá o argumento contra `node-cron` na API foi "`replicas: 1` — a
+unicidade é propriedade do deploy". Não é mais ela que segura a garantia: o agendamento vive no Redis
+e o BullMQ entrega o job **uma vez** com quantas réplicas existirem. Subir para 2 passa a ser decisão
+de vazão, não jeito de disparar em dobro.
+
+**Duas configurações que quebram só em produção — daí serem constantes com teste:**
+
+1. **O prefixo é `{crm-worker}`, com chaves.** O Serverless é cluster e os scripts do BullMQ são
+   multi-key: sem hash tag as chaves caem em slots diferentes e tudo falha com `CROSSSLOT`.
+   Standalone funciona dos dois jeitos — é o erro que **passa no CI**. Ele também isola o keyspace
+   compartilhado.
+2. **`maxRetriesPerRequest: null`**, exigência do BullMQ: no default (20) o cliente desiste do
+   comando num failover e o job morre em vez de esperar.
+
+**A fiação (`new Queue`/`new Worker`) fica no `index.ts`** — construir um `Worker` põe o loop no ar,
+e teste de unidade não pode; as decisões ficam em `opcoesFila`/`opcoesTrabalhador`, puras e cobertas.
+`iniciar()` **remove agendamento órfão**: senão varredura renomeada dispara para sempre.
+
+**A primeira varredura é o `batimento`** (5 min), pagando a conta 2 da SW-016. As quatro do Deal Ops
+entram com o `GRANT` em `tarefa`/`negociacao` (REQ-0603 · REQ-0412).
+
+**Executor:** `npm run verify` — o piso de 100% cobre `relogio.ts`, e o teste do prefixo falha se
+tirarem a hash tag.

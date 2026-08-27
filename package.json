@@ -32,6 +32,7 @@
     "@aws-sdk/client-sqs": "^3.1096.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "bullmq": "^6.3.1",
     "crm-backend": "github:artell-ai/crm-backend#v0.2.0"
   },
   "// @types/pg": "O DRIVER não é dependência deste repo e o eslint proíbe importá-lo (ver eslint.config.js): quem abre conexão é o crm-backend, e o `pg` chega hoisted junto dele. Os TIPOS ficam porque as assinaturas que este worker importa os mencionam — `PoolClient` aparece em `database/transaction.d.ts` e no repository. Numa instalação real (dependência git, não symlink) as devDeps do crm-backend NÃO são instaladas, então o `@types/pg` dele não existiria e o typecheck daqui quebraria. É por isso que ele é declarado aqui e o driver não.",

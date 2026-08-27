@@ -21,6 +21,15 @@ function inteiro(nome: string, padrao: number): number {
 
 export interface Config {
   filaUrl: string;
+  /**
+   * O Redis do relógio (SW-017). **Obrigatória**, e é decisão: sem ela o processo subiria
+   * consumindo a fila e não seria o relógio — a falha que a SW-016 nomeou como "some sem sinal",
+   * porque relógio parado não faz fila crescer. Aqui ela vira erro de boot.
+   *
+   * Em AWS é `rediss://` (TLS), o mesmo ElastiCache Serverless que o `crm-backend` já usa
+   * (`src/lib/cache/index.ts`) — não há cache novo a provisionar.
+   */
+  redisUrl: string;
   regiao: string;
   /** Endpoint alternativo — LocalStack em dev. Vazio = a AWS de verdade. */
   endpoint: string | undefined;
@@ -42,6 +51,7 @@ export interface Config {
 export function carregarConfig(): Config {
   return {
     filaUrl: obrigatoria("SQS_QUEUE_URL"),
+    redisUrl: obrigatoria("REDIS_URL"),
     regiao: process.env.AWS_REGION ?? "us-east-1",
     endpoint: process.env.SQS_ENDPOINT ?? undefined,
     esperaSegundos: inteiro("SQS_WAIT_TIME_SECONDS", 20),

@@ -20,6 +20,25 @@ O que segue é **só o que difere**, e cada item difere por um motivo.
 
 ---
 
+## 0. O `REDIS_URL` do relógio — e a boa notícia é que ele já existe
+
+O relógio (SW-016/SW-017) agenda no **ElastiCache Serverless compartilhado da plataforma**, o mesmo
+cache que o `crm-backend` já usa. **Não há provisionamento novo**: o endpoint está em
+`helm/values-development.yaml` e `values-production.yaml`, como env não-sensível (é endpoint, não
+credencial), exatamente como no chart de lá.
+
+Dois detalhes que só quebram em produção, e por isso estão travados em constante com teste
+(`src/relogio.ts`): as chaves vivem sob o prefixo **`{crm-worker}`** — a hash tag é obrigatória
+porque o Serverless é cluster por dentro e os scripts do BullMQ são multi-key (sem ela, `CROSSSLOT`);
+e a conexão usa `maxRetriesPerRequest: null`, que o BullMQ exige para o job esperar um failover em vez
+de morrer.
+
+⚠️ **O alarme de AUSÊNCIA de tique é pré-requisito, e é o item 5 do REQ-0414 crescendo.** A liveness
+da SW-007 é a profundidade da fila; relógio parado **não faz fila crescer**. O pulso existe
+(`crm_worker_tique`, a cada 5 min, constante para o alarme não divergir do pulso) — falta observá-lo.
+
+---
+
 ## 1. ⛔ A `DATABASE_URL` tem de ser a do role restrito
 
 É o item mais importante deste deploy, e o único que, se for feito errado, **passa nos testes e

@@ -4,7 +4,11 @@ import { carregarConfig } from "../../src/config";
 const original = { ...process.env };
 
 beforeEach(() => {
-  process.env = { ...original, SQS_QUEUE_URL: "http://localhost:4566/000000000000/fila-save" };
+  process.env = {
+    ...original,
+    SQS_QUEUE_URL: "http://localhost:4566/000000000000/fila-save",
+    REDIS_URL: "redis://localhost:6379",
+  };
   delete process.env.SQS_ENDPOINT;
   delete process.env.AWS_REGION;
   delete process.env.SQS_WAIT_TIME_SECONDS;
@@ -24,6 +28,24 @@ describe("carregarConfig", () => {
   it("URL vazia conta como ausente", () => {
     process.env.SQS_QUEUE_URL = "";
     expect(() => carregarConfig()).toThrow(/SQS_QUEUE_URL/);
+  });
+
+  // SW-017 — o relógio é parte do contrato deste processo, não um extra. Sem REDIS_URL ele subiria
+  // consumindo a fila e NÃO seria o relógio, e é exatamente esse o modo de falha que a SW-016
+  // nomeou: relógio parado não faz fila crescer, some sem sinal. Falhar no boot é o oposto disso.
+  it("exige a URL do Redis — sem ela o worker subiria sem ser o relógio, calado", () => {
+    delete process.env.REDIS_URL;
+    expect(() => carregarConfig()).toThrow(/REDIS_URL/);
+  });
+
+  it("URL do Redis vazia conta como ausente", () => {
+    process.env.REDIS_URL = "";
+    expect(() => carregarConfig()).toThrow(/REDIS_URL/);
+  });
+
+  it("lê a URL do Redis", () => {
+    process.env.REDIS_URL = "rediss://cache.use1.cache.amazonaws.com:6379";
+    expect(carregarConfig().redisUrl).toBe("rediss://cache.use1.cache.amazonaws.com:6379");
   });
 
   it("os defaults são os que a SQS aceita: long polling no máximo, 10 mensagens", () => {

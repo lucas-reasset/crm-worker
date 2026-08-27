@@ -82,10 +82,14 @@ cd ../crm-worker && docker compose up --build  # LocalStack + fila-save + fila-s
 O build precisa do seu agente SSH (`ssh-add -l` não pode estar vazio) — a dependência `crm-backend` é
 git privada. Sem ele o build falha em *"Repository not found"*.
 
+⚠️ **O `docker-compose` do `crm-backend` tem de estar de pé**, e agora por dois motivos: o Postgres
+(sempre foi) e o **Redis**, que é onde o relógio agenda (SW-017). Sem `REDIS_URL` o processo não sobe
+— de propósito: um worker que consome a fila mas não é o relógio sumiria sem sinal.
+
 **Sem Docker:**
 
 ```bash
-cp .env.example .env          # ajuste DATABASE_URL / SQS_QUEUE_URL
+cp .env.example .env          # ajuste DATABASE_URL / SQS_QUEUE_URL / REDIS_URL
 npm install                   # ⚠️ ver "a dependência do crm-backend", abaixo
 npm run dev                   # tsx watch
 npm run tdd                   # o loop vermelho→verde (SW-013); aceita -- <arquivo de teste>
