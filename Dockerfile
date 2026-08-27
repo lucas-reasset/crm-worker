@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# save-worker — consumidor da fila de retorno do (pré-)enriquecimento (D-068 · BE-074).
+# crm-worker — consumidor da fila de retorno do (pré-)enriquecimento (D-068 · BE-074).
 #
 # Debian slim (não alpine) pelo MESMO motivo do crm-backend: este serviço o importa como
 # dependência, e o `bcrypt` dele é addon nativo cujo prebuild glibc é confiável. No musl do alpine

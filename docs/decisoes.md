@@ -1,4 +1,4 @@
-# Decisões — save-worker
+# Decisões — crm-worker
 
 Registro **append-only** das decisões deste serviço, com o *porquê* junto. É o irmão dos registros do
 crm-backend: lá as decisões são de **modelagem** (`D-00x`, e `modelo/` é dono do schema) e de
@@ -17,7 +17,7 @@ Cada projeto tem o seu, com prefixo próprio, para os números nunca colidirem e
 | crm-backend | `modelo/decisoes.md` | `D-00x` (modelagem — manda no schema) |
 | crm-backend | `docs/decisoes.md` | `BE-00x` (camadas, build, teste, runtime da API) |
 | crm-frontend | `docs/decisoes.md` | `FE-00x` |
-| save-worker | `docs/decisoes.md` (este) | `SW-00x` |
+| crm-worker | `docs/decisoes.md` (este) | `SW-00x` |
 
 **Como usar:** antes de mexer no loop ou no gravador, leia. Se a mudança pede algo que contraria uma
 decisão, a saída é **mudar a decisão** (nova entrada, revogando a antiga) — não abrir exceção calada
@@ -382,3 +382,36 @@ Roda como o usuário daquele `.env` (o dono do schema), **não** como o role res
 **Por quê não um seed com SQL.** Porque ele grava a forma que o autor do seed imaginou. A tela passaria a exibir afirmação com `en_status`/`en_origem` escolhidos à mão — exatamente o que a D-068 tirou do payload para que ninguém pudesse escolher — e o primeiro bug seria descoberto quando o worker real chegasse com forma diferente. No primeiro uso, em 18/08/2026, o `--seco` reprovou dois payloads antes de qualquer escrita (`nr_registros` `const 0` em score/prospecção; `nr_processo` sem máscara).
 
 **Executor:** `npm run mock:retorno -- --seco`, que valida todo payload contra os contratos publicados e sai 1 se algum não casar. Não entra no `verify` de propósito — é ferramenta de bancada, e o `verify` não tem banco.
+
+---
+
+## SW-015 — O serviço passa a se chamar `crm-worker`, e o nome vale até a role do Postgres
+
+**Data:** 2026-08-27
+
+**Decisão.** `save-worker` virou **`crm-worker`** — diretório do workspace, repositório
+(`artell-ai/crm-worker`), `name` do pacote, chart e release Helm, `ECR_REPOSITORY` (`app/crm-worker`),
+projeto do compose e o segredo `/crm/<ns>/crm-worker`. O nome antigo dizia o *verbo* ("salva"); o novo
+diz de **qual produto** ele é — a pergunta que se faz olhando uma lista de repositórios ou de pods
+ao lado de `crm-backend` e `crm-frontend`.
+
+**Três coisas foram renomeadas junto, e nenhuma é cosmética. Todas são baratas HOJE porque o
+serviço não tem deploy (REQ-0414, itens 4 e 5 abertos) — depois, cada uma custaria uma migração:**
+
+1. **A role restrita do Postgres: `save_worker` → `crm_worker`** (`scripts/role-dev.sql`,
+   `scripts/provar-grant.sql`, `.env.example`, o `externalsecret`). Ela **não nasce de migration** —
+   o `GRANT` mínimo da D-068 segue aberto lá e o REQ-0412 é quem cobra a prova. Depois de existir em
+   staging, seria `ALTER ROLE` mais rotação de segredo.
+2. **Os nove eventos de log: `save_worker_*` → `crm_worker_*`** (`consumidor.ts`, `index.ts`).
+   Nenhum painel consulta esses nomes ainda; depois do alarme de profundidade de fila, renomear
+   passaria a ser mudança de contrato de observabilidade.
+3. **O `cod_requisicao` da trilha: `save-worker:<id_mensagem>` → `crm-worker:<id_mensagem>`**
+   (`salvar.ts`). É DADO em `sys_audit_log` — só as linhas de mock em dev carregam o valor velho.
+
+**O que NÃO mudou, de propósito.** SW-001…SW-014 e os registros irmãos (`D-`, `BE-`, `ETL-`) seguem
+dizendo `save-worker`: o registro é **append-only**, e reescrever histórico apaga a prova de quando
+cada decisão foi tomada. Quem procurar o nome antigo cai aqui.
+
+**Executor:** `grep -rn 'save[-_]worker' src helm scripts .github` sai vazio, e `npm run verify`
+prova que o rename não quebrou o pacote — `package.json` e `package-lock.json` andam juntos.
+

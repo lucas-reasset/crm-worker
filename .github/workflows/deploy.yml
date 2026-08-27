@@ -11,7 +11,7 @@ name: 'Deploy'
 #     como build secret (`--secret id=gh_token`), nunca como ARG (ARG fica no histórico da imagem).
 #     O `GITHUB_TOKEN` do job NÃO serve: ele é escopado a ESTE repo.
 #  2. Nada disto existe na infra ainda: repositório ECR, ServiceAccount com IRSA, a fila + DLQ, e o
-#     segredo `/crm/<ns>/save-worker` no Secrets Manager (com a URL do ROLE RESTRITO). Ver
+#     segredo `/crm/<ns>/crm-worker` no Secrets Manager (com a URL do ROLE RESTRITO). Ver
 #     docs/deployment.md e o REQ-0414 — este workflow falha até lá, e falha alto, que é o desejado.
 
 on:
@@ -32,7 +32,7 @@ permissions:
   contents: read
 
 env:
-  ECR_REPOSITORY: app/save-worker
+  ECR_REPOSITORY: app/crm-worker
 
 jobs:
   deploy:
@@ -104,7 +104,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          helm upgrade --install save-worker ./helm \
+          helm upgrade --install crm-worker ./helm \
             --namespace "${{ steps.ctx.outputs.namespace }}" \
             -f helm/values.yaml \
             -f "${{ steps.ctx.outputs.values_file }}" \

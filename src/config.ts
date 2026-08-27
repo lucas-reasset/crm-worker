@@ -1,6 +1,6 @@
 // O contrato de ambiente do worker — e ele é PEQUENO de propósito.
 //
-// O save-worker importa `crm-backend/database/db`, e isso poderia ter arrastado o contrato de env
+// O crm-worker importa `crm-backend/database/db`, e isso poderia ter arrastado o contrato de env
 // inteiro da API (JWT_SECRET, S3_BUCKET, CORS_ORIGIN…). Não arrasta: o `validateEnv` do backend é
 // chamado pelo `server.ts`, não no load do `config`, então importar o pool exige só `DATABASE_URL`
 // e `DB_SCHEMA` (verificado, não suposto). O que este arquivo valida é o que ESTE processo precisa.

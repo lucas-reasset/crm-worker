@@ -1,5 +1,5 @@
 {
-  "name": "save-worker",
+  "name": "crm-worker",
   "version": "0.1.0",
   "private": true,
   "description": "Consome o retorno do (pré-)enriquecimento da SQS e o grava no Postgres do CRM. D-068 · BE-074",

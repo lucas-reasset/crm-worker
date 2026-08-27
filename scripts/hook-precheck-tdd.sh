@@ -45,16 +45,16 @@ print(val if isinstance(val, str) else "")
 
 FILE_PATH="$(extract '.tool_input.file_path')"
 
-# Only TypeScript under a save-worker/src/. Everything else — tests/, scripts/, helm/, the other
+# Only TypeScript under a crm-worker/src/. Everything else — tests/, scripts/, helm/, the other
 # repos of the workspace (each with its own gate) — is none of this hook's business, and exits
 # before paying for node.
 case "$FILE_PATH" in
-  */save-worker/src/*.ts) ;;
+  */crm-worker/src/*.ts) ;;
   *) exit 0 ;;
 esac
 
 # Locate the repo from FILE_PATH, not from $0 or the cwd: this repo lives inside an umbrella
-# workspace, so the session's cwd may be reasset-group/ and not save-worker/.
+# workspace, so the session's cwd may be reasset-group/ and not crm-worker/.
 WORKER_ROOT="${FILE_PATH%%/src/*}"
 GATE="$WORKER_ROOT/scripts/check-espelho.mjs"
 

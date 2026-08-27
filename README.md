@@ -1,4 +1,4 @@
-# save-worker
+# crm-worker
 
 Consome o **retorno** do (pré-)enriquecimento na SQS e o grava no Postgres do CRM. É a **ponta de
 escrita do nosso modelo** — não é um extrator.
@@ -65,7 +65,7 @@ gate de revisão. O espelho disso em código é
 > ⛔ **O role restrito ainda NÃO EXISTE em produção.** Enquanto a `DATABASE_URL` de lá não for a
 > dele, a regra acima é papel: o worker teria permissão de escrever onde não deve. Onde o role nasce
 > (migration ou Terraform) é decisão aberta — ver o [REQ-0412](../produto/requisitos/REQ-0412.yaml) e
-> [docs/deployment.md §1](docs/deployment.md). Em dev, `scripts/role-dev.sql` cria um `save_worker`
+> [docs/deployment.md §1](docs/deployment.md). Em dev, `scripts/role-dev.sql` cria um `crm_worker`
 > local, e `scripts/provar-grant.sql` prova o `GRANT` **por negação** (cada tentativa proibida num
 > `SAVEPOINT` próprio — sem isso a primeira negativa aborta a transação e as demais só ecoam
 > "current transaction is aborted", o que parece prova e não é).
@@ -76,7 +76,7 @@ Duas maneiras. **Com Docker** o LocalStack e a fila (com DLQ e redrive) vêm de 
 
 ```bash
 cd ../crm-backend && docker compose up -d      # o BANCO é de lá — este compose não o sobe
-cd ../save-worker && docker compose up --build  # LocalStack + fila-save + fila-save-dlq + o worker
+cd ../crm-worker && docker compose up --build  # LocalStack + fila-save + fila-save-dlq + o worker
 ```
 
 O build precisa do seu agente SSH (`ssh-add -l` não pode estar vazio) — a dependência `crm-backend` é

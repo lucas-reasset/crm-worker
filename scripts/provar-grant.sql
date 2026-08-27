@@ -1,4 +1,4 @@
--- A PROVA do GRANT: o que o save_worker PODE e o que ele NÃO PODE.
+-- A PROVA do GRANT: o que o crm_worker PODE e o que ele NÃO PODE.
 --
 -- A D-068 fez da regra "o canônico só recebe o validado" uma PERMISSÃO. Permissão que ninguém
 -- testou é suposição — e a forma de testá-la é tentar violá-la e ver falhar.
@@ -20,12 +20,12 @@ SELECT (SELECT id FROM importacao LIMIT 1) AS imp,
        (SELECT id FROM pessoa LIMIT 1) AS pes,
        (SELECT id FROM credor ORDER BY id LIMIT 1) AS cred,
        (SELECT id FROM fornecedor WHERE sigla = 'pre_enriquecimento') AS forn;
-GRANT SELECT ON alvo TO save_worker;
+GRANT SELECT ON alvo TO crm_worker;
 
 INSERT INTO importacao_credor (id_importacao, id_credor, en_status, dt_publicacao)
 SELECT imp, cred, 'publicado', now() FROM alvo;
 
-SET ROLE save_worker;
+SET ROLE crm_worker;
 
 \echo ''
 \echo '######## O QUE ELE PODE ########'

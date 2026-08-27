@@ -14,7 +14,7 @@ import enriquecimento from "crm-backend/contratos/enriquecimento.schema.json";
 // ⚠️ AS DUAS ETAPAS TÊM ENVELOPES DIFERENTES (D-075), e isto não é provisório. O pré tem grão
 // (credor × atributo) e devolve um `resultado` ÚNICO; o enriquecimento tem grão credor e devolve
 // `consultas[]` → `achados[]`, forma que ele PRECISA porque a CredValue cobra por serviço e seis
-// chamadas são seis linhas de custo. A D-068 tinha desenhado um envelope só "para o save-worker ter
+// chamadas são seis linhas de custo. A D-068 tinha desenhado um envelope só "para o crm-worker ter
 // um mapeador"; são dois. O que se preservou é ter **um gravador** — ver `normalizar.ts`.
 
 export type Etapa = "pre_enriquecimento" | "enriquecimento";

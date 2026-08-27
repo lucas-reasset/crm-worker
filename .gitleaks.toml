@@ -1,4 +1,4 @@
-title = "gitleaks — save-worker"
+title = "gitleaks — crm-worker"
 
 # Estende as regras padrao do gitleaks (nao substitui, so adiciona excecoes abaixo).
 [extend]

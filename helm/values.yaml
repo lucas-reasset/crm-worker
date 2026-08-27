@@ -1,4 +1,4 @@
-# Defaults do save-worker. Sobrescritos por ambiente em values-development.yaml /
+# Defaults do crm-worker. Sobrescritos por ambiente em values-development.yaml /
 # values-production.yaml e por --set image.tag=<git-sha> vindo do deploy.yml.
 #
 # ESTE CHART NÃO É UMA CÓPIA DO chart do crm-backend, e as diferenças são todas o mesmo fato: ele
@@ -8,7 +8,7 @@
 #     inventado responderia 200 com o loop travado (foi o bug da SW-003);
 #   · `nodePool: cpu-spot` em vez de on-demand — ver o comentário abaixo, que INVERTE o do chart da
 #     API de propósito.
-name: "save-worker"
+name: "crm-worker"
 namespace: ""
 
 image:
@@ -49,7 +49,7 @@ terminationGracePeriodSeconds: 60
 # precisa de sqs:ReceiveMessage, sqs:DeleteMessage e sqs:GetQueueAttributes NA FILA DE RETORNO.
 # Ela não existe hoje: ver docs/deployment.md e o REQ-0414.
 serviceAccount:
-  name: "save-worker"
+  name: "crm-worker"
 
 # Config não-sensível. Segredos vêm do ExternalSecret — nunca aqui.
 #

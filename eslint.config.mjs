@@ -5,7 +5,7 @@
 // do backend (BE-002), e `console.*` num worker de fila é linha que ninguém acha no CloudWatch.
 //
 // A que é DESTE serviço é o `no-restricted-imports` do segundo bloco. Ela mecaniza a fronteira que
-// o save-worker existe para respeitar: aqui não há SQL. Ver o comentário sobre ela, abaixo.
+// o crm-worker existe para respeitar: aqui não há SQL. Ver o comentário sobre ela, abaixo.
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(

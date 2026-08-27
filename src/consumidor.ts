@@ -10,7 +10,7 @@ import { ContratoInvalidoError, interpretarRetorno } from "./contrato";
 import type { salvarRetorno } from "./salvar";
 import { RetornoImprocessavelError } from "./normalizar";
 
-const log = logger.child({ module: "save-worker" });
+const log = logger.child({ module: "crm-worker" });
 
 export interface Consumidor {
   rodar(): Promise<void>;
@@ -97,12 +97,12 @@ export function criarConsumidor(config: Config, deps: DepsConsumidor): Consumido
 
       if (resultado.jaProcessada) {
         log.info(
-          { event: "save_worker_entrega_repetida", idMensagem: retorno.id_mensagem, tentativas },
+          { event: "crm_worker_entrega_repetida", idMensagem: retorno.id_mensagem, tentativas },
           "Mensagem já estava concluída — entrega repetida da SQS",
         );
       } else {
         log.info(
-          { event: "save_worker_retorno_gravado", ...resultado, tentativas },
+          { event: "crm_worker_retorno_gravado", ...resultado, tentativas },
           "Retorno gravado",
         );
       }
@@ -126,7 +126,7 @@ export function criarConsumidor(config: Config, deps: DepsConsumidor): Consumido
 
       log.error(
         {
-          event: permanente ? "save_worker_retorno_recusado" : "save_worker_falha_transiente",
+          event: permanente ? "crm_worker_retorno_recusado" : "crm_worker_falha_transiente",
           err,
           tentativas,
           detalhes: err instanceof ContratoInvalidoError ? err.detalhes : undefined,
@@ -170,8 +170,8 @@ export function criarConsumidor(config: Config, deps: DepsConsumidor): Consumido
     async rodar(): Promise<void> {
       ativo = true;
       log.info(
-        { event: "save_worker_iniciado", fila: config.filaUrl, endpoint: config.endpoint },
-        "save-worker escutando a fila de retorno",
+        { event: "crm_worker_iniciado", fila: config.filaUrl, endpoint: config.endpoint },
+        "crm-worker escutando a fila de retorno",
       );
       while (ativo) {
         try {
@@ -186,13 +186,13 @@ export function criarConsumidor(config: Config, deps: DepsConsumidor): Consumido
           // martela a SQS milhares de vezes por segundo e enche o log — a falha fica mais cara que
           // a causa. O backoff é o que separa "resiliente" de "loop quente".
           log.error(
-            { event: "save_worker_receive_falhou", err, backoffMs: BACKOFF_MS },
+            { event: "crm_worker_receive_falhou", err, backoffMs: BACKOFF_MS },
             "Falha ao receber da fila — aguardando antes de tentar de novo",
           );
           await dormir(BACKOFF_MS);
         }
       }
-      log.info({ event: "save_worker_parado" }, "save-worker parou");
+      log.info({ event: "crm_worker_parado" }, "crm-worker parou");
     },
     parar(): void {
       ativo = false;

@@ -116,7 +116,7 @@ export async function salvarRetorno(
   // `db.ts` dá as GUCs; saber QUEM é trabalho explícito, e é este bloco (BE-074).
   await runWithContext(
     {
-      requestId: `save-worker:${retorno.id_mensagem}`,
+      requestId: `crm-worker:${retorno.id_mensagem}`,
       ip: null,
       actorId: null,
       impersonadorId: null,

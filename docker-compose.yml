@@ -1,6 +1,6 @@
-# Stack local do save-worker: LocalStack (SQS) + a fila criada + o worker.
+# Stack local do crm-worker: LocalStack (SQS) + a fila criada + o worker.
 #
-#   cd save-worker && docker compose up --build
+#   cd crm-worker && docker compose up --build
 #
 # O BANCO NÃO ESTÁ AQUI, e é de propósito — mesma escolha do compose do crm-frontend, que também não
 # sobe o backend. Quem é dono do Postgres é o crm-backend (`cd ../crm-backend && docker compose up`),
@@ -14,7 +14,7 @@
 # ⚠️ O BUILD PRECISA DO SEU AGENTE SSH (a dependência `crm-backend` é git privada, BE-076) — o
 # `ssh: [default]` abaixo é o que o entrega ao buildkit. Se `ssh-add -l` estiver vazio, o build falha
 # em "Repository not found". Em CI o caminho é outro (token por --secret): ver .github/workflows.
-name: reasset-save-worker
+name: reasset-crm-worker
 
 services:
   localstack:
@@ -71,7 +71,7 @@ services:
       # ⚠️ O DONO DO SCHEMA, não o role restrito, é o default aqui — porque em dev o objetivo é
       # rodar, e o role de dev é opt-in (`scripts/role-dev.sql`). Para exercitar o GRANT de verdade
       # — que é o que a D-068 promete —, aplique o script e troque para
-      # `postgres://save_worker:save_worker_dev@host.docker.internal:5432/reasset`.
+      # `postgres://crm_worker:crm_worker_dev@host.docker.internal:5432/reasset`.
       DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@host.docker.internal:5432/reasset}
       DB_SCHEMA: ${DB_SCHEMA:-crm}
       DB_POOL_MAX: ${DB_POOL_MAX:-5}
@@ -91,5 +91,5 @@ services:
       fila:
         condition: service_completed_successfully
     # Sem healthcheck: este serviço não escuta porta (SW-007). "Está vivo?" se lê no log
-    # (`save_worker_iniciado`) e na profundidade da fila.
+    # (`crm_worker_iniciado`) e na profundidade da fila.
     stop_grace_period: 60s

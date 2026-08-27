@@ -1,5 +1,5 @@
 apiVersion: v2
-name: save-worker
-description: Helm chart for save-worker (SQS consumer que grava o retorno do (pré-)enriquecimento) on EKS
+name: crm-worker
+description: Helm chart for crm-worker (SQS consumer que grava o retorno do (pré-)enriquecimento) on EKS
 type: application
 version: 1.0.0

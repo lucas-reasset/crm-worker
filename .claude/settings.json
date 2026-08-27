@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "s=\"$CLAUDE_PROJECT_DIR/save-worker/scripts/hook-precheck-tdd.sh\"; if [ ! -f \"$s\" ]; then s=\"$CLAUDE_PROJECT_DIR/scripts/hook-precheck-tdd.sh\"; fi; if [ -f \"$s\" ]; then exec bash \"$s\"; fi; exit 0"
+            "command": "s=\"$CLAUDE_PROJECT_DIR/crm-worker/scripts/hook-precheck-tdd.sh\"; if [ ! -f \"$s\" ]; then s=\"$CLAUDE_PROJECT_DIR/scripts/hook-precheck-tdd.sh\"; fi; if [ -f \"$s\" ]; then exec bash \"$s\"; fi; exit 0"
           }
         ]
       }

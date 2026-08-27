@@ -1,11 +1,11 @@
-# Deploy do save-worker
+# Deploy do crm-worker
 
 > **Estado em 12/08/2026: este serviço NÃO está deployado.** O chart e os dois workflows existem e
 > estão escritos; o que falta é infra, e está listado abaixo. O rastreio de estado é o
 > [REQ-0414](../../produto/requisitos/REQ-0414.yaml) — este documento explica o *porquê* de cada item,
 > o requisito é quem diz se está feito.
 >
-> **O que mudou em 12/08:** o repositório passou a existir (`artell-ai/save-worker`, privado) e o
+> **O que mudou em 12/08:** o repositório passou a existir (`artell-ai/crm-worker`, privado) e o
 > código foi enviado nas três branches, então **o CI deixou de ser um arquivo que nunca executa** — e
 > a primeira execução já disse o que falta. A tag `v0.2.0` do crm-backend também existe. O que continua
 > faltando, agora com prova de CI, é o **secret** da §2, e depois dele o Terraform da §3/§4.
@@ -31,7 +31,7 @@ convenção: o worker tem `INSERT` em `enriquecimento_consulta` e `pessoa_inform
 `pessoa`, `pessoa_fisica`, `advogado`, `cessao`, `telefone`, `email`, `endereco`. O espelho disso em
 TypeScript é o `RetornoEnriquecimentoRepository`, no crm-backend.
 
-Se o segredo `/crm/<ns>/save-worker` carregar a URL do dono do schema, o código continua escrevendo
+Se o segredo `/crm/<ns>/crm-worker` carregar a URL do dono do schema, o código continua escrevendo
 só as três coisas — mas **por disciplina, não por impedimento**. O dia em que alguém acrescentar uma
 escrita "só para resolver rápido", nada barra.
 
@@ -67,8 +67,8 @@ ausente"*. Isso é o desenho funcionando: ele falha alto e nomeia o que falta, e
 `npm ci` com *"Repository not found"*. Para destravar:
 
 ```bash
-gh secret set CRM_BACKEND_READ_TOKEN --repo artell-ai/save-worker   # cola o PAT fine-grained
-gh run rerun --repo artell-ai/save-worker --failed
+gh secret set CRM_BACKEND_READ_TOKEN --repo artell-ai/crm-worker   # cola o PAT fine-grained
+gh run rerun --repo artell-ai/crm-worker --failed
 ```
 
 Mintar o token é ato humano: PAT fine-grained com **Contents: Read** em `artell-ai/crm-backend`, ou um
@@ -90,7 +90,7 @@ Terraform deve produzir.
 
 ## 4. ⛔ ServiceAccount com IRSA
 
-O chart **referencia** a ServiceAccount `save-worker`, nunca a cria (mesmo desenho do chart da API).
+O chart **referencia** a ServiceAccount `crm-worker`, nunca a cria (mesmo desenho do chart da API).
 Ela nasce no Terraform (`modules/aws/kubernetes/service`, repo Infraestrutura) com a annotation IRSA,
 e a policy precisa de:
 
@@ -105,7 +105,7 @@ de S3 nem de KMS de aplicação.
 
 ## 5. ⛔ Repositório ECR
 
-`app/save-worker`, no mesmo registry do `app/crm-api`.
+`app/crm-worker`, no mesmo registry do `app/crm-api`.
 
 ## 6. ⚠️ Duas coisas que ficam faltando mesmo depois do deploy
 

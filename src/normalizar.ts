@@ -214,7 +214,7 @@ function cessaoParaAchado(
       // duas pontas e instrui o worker a NÃO inferir quem é quem — então ninguém responde, na
       // entrada do dado, a pergunta mais consequente da cessão: se o credor-alvo é o cedente, ele
       // perdeu o crédito e sai do funil; se é só o cessionário, o crédito segue intacto.
-      // Não se deriva por comparação de documento aqui de propósito: o role do save-worker não tem
+      // Não se deriva por comparação de documento aqui de propósito: o role do crm-worker não tem
       // SELECT em `pessoa` (é o que o mantém longe do canônico), e adivinhar por nome é exatamente
       // o que o contrato alerta para não fazer. Fica para a revisão humana.
       credor_is_cedente: null,
