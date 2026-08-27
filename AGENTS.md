@@ -16,10 +16,16 @@ o crm-backend, e o caminho é o `AGENTS.md` de lá.
 
 # O que é
 
-Consumidor da fila de retorno do (pré-)enriquecimento: lê a mensagem na SQS, escreve **três coisas e
-nada mais** — uma `enriquecimento_consulta` por consulta (a tentativa e o custo), uma
-`pessoa_informacao` por achado (a afirmação), e o fechamento da `importacao_credor` — tudo num commit
-só, e apaga da fila **depois** do commit.
+O executor do CRM **fora de requisição** — o que roda sem ninguém clicar. Hoje tem uma entrada
+(a fila); a **SW-016 decidiu a segunda**, o relógio do sistema, e ela ainda não existe em código:
+quando existir, um tique varre `tarefa.dt_prazo` vencido e aplica a transição (REQ-0603). Ler a
+seção acima antes: o relógio também não ganha SQL próprio nem reescreve regra — ele chama a
+superfície pública do crm-backend, como o gravador da fila já faz.
+
+A entrada que existe hoje é o consumo da fila de retorno do (pré-)enriquecimento: lê a mensagem na
+SQS, escreve **três coisas e nada mais** — uma `enriquecimento_consulta` por consulta (a tentativa e
+o custo), uma `pessoa_informacao` por achado (a afirmação), e o fechamento da `importacao_credor` —
+tudo num commit só, e apaga da fila **depois** do commit.
 
 O que ele **não** é, porque o modelo mental errado custa caro:
 
@@ -54,7 +60,7 @@ Estas não têm superfície própria — valem no código inteiro, então moram 
 - **ids e dinheiro são `string`.** `numeric` volta do `pg` como string; **não converta para
   number** (o float destrói centavo).
 - **Log é evento estruturado** (BE-002, herdado com o `logger`):
-  `log.info({ event: "save_worker_retorno_gravado", … }, "Retorno gravado")` — nunca frase
+  `log.info({ event: "crm_worker_retorno_gravado", … }, "Retorno gravado")` — nunca frase
   concatenada, nunca `console.*` (o eslint reprova).
 - **Formato não se discute: `npm run format`** (BE-010). O Prettier manda e `format:check` é o
   primeiro passo do `verify`. Não gaste turno alinhando vírgula.

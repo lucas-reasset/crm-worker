@@ -415,3 +415,36 @@ cada decisão foi tomada. Quem procurar o nome antigo cai aqui.
 **Executor:** `grep -rn 'save[-_]worker' src helm scripts .github` sai vazio, e `npm run verify`
 prova que o rename não quebrou o pacote — `package.json` e `package-lock.json` andam juntos.
 
+---
+
+## SW-016 — O relógio do sistema mora aqui: de consumidor de fila a executor FORA de requisição
+
+**Data:** 2026-08-27
+
+**Decisão.** As quatro automações por tempo do Deal Ops (REQ-0603 · REQ-0208) rodam **neste
+deployable**, num tique ao lado do laço da fila. Passam a existir duas entradas de trabalho —
+**mensagem** (alguém publicou) e **calendário** (ninguém fez nada) —, nenhuma requisição; foi por
+isto que o nome deixou de dizer o verbo de um job (SW-015). A regra segue do crm-backend (BE-074):
+aqui é a ponta de execução; o que cresce é a superfície de lá (BE-076).
+
+**Por que não as três saídas do REQ-0603.** *`node-cron` na API*: ela escala para N réplicas, e
+execução única viraria trava que alguém tem de lembrar de segurar; aqui `replicas: 1` está nos três
+`values` — unicidade é propriedade do deploy, não de disciplina. *EventBridge*: **segunda** conta de
+provisionamento, com a primeira (REQ-0414) não paga. *`pg_cron`*: a virada precisa de **ator na
+trilha** (D-010), e SQL agendado no banco não assina.
+
+**O pré-voo barateia a escolha:** o prazo **já está materializado** — `prazoDaTarefa` grava
+`tarefa.dt_prazo` no INSERT e `dias_uteis_somar()` desconta feriado (D-151). O relógio **não conta
+dia útil**: varre `dt_prazo` vencido com tarefa pendente e vira. As quatro regras são uma
+consulta só.
+
+**Duas contas que a decisão ACEITA — por isso estão escritas:**
+
+1. **O `GRANT` cresce.** `crm_worker` não alcança `negociacao` nem `tarefa` — a lista fechada da
+   D-068 é do enriquecimento. Varrer e virar exige as duas (REQ-0412); segue lista fechada.
+2. **A SW-007 não cobre o relógio.** Lá a liveness é `ApproximateAgeOfOldestMessage`; relógio parado
+   não faz fila crescer, some sem sinal. Pede batimento e alarme de ausência — o item 5 do REQ-0414
+   vira dois.
+
+**Executor:** o `REQ-0603` — `decisao_ref: SW-016`, e sondas exigindo `src/relogio.ts` vivo no
+`index.ts` e o GRANT em `tarefa`. Vermelhas, dizem ao REQ-0208: decidido, não feito.
