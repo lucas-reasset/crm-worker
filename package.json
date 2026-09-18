@@ -27,21 +27,21 @@
   },
   "// crm-backend": "BE-076 — dependência GIT PINADA POR TAG, não por branch. O pin é o que faz o deploy do worker ser um evento: sem ele, um merge no crm-backend mudaria o comportamento deste serviço em produção sem ninguém deployar nada. O `prepare` de lá compila o dist/ no install. A tag v0.2.0 EXISTE desde 12/08/2026 (ponta de origin/development, e7bd562), então `npm install`/`npm ci` resolvem por ela e o `prepare` de lá compila o dist/ durante o install. ⚠️ Se o clone falhar em \"Repository not found\", é o insteadOf do seu git não cobrir a forma `ssh://git@github.com/` que o npm emite — ver o README. Para desenvolver contra o repo irmão ao vivo: `npm i --no-save ../crm-backend` (symlink; reescreve o lock, descarte antes de commitar).",
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.1096.0",
+    "@aws-sdk/client-sqs": "^3.1131.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "crm-backend": "github:artell-ai/crm-backend#v0.2.0"
   },
   "// @types/pg": "O DRIVER não é dependência deste repo e o eslint proíbe importá-lo (ver eslint.config.js): quem abre conexão é o crm-backend, e o `pg` chega hoisted junto dele. Os TIPOS ficam porque as assinaturas que este worker importa os mencionam — `PoolClient` aparece em `database/transaction.d.ts` e no repository. Numa instalação real (dependência git, não symlink) as devDeps do crm-backend NÃO são instaladas, então o `@types/pg` dele não existiria e o typecheck daqui quebraria. É por isso que ele é declarado aqui e o driver não.",
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/pg": "^8.11.10",
+    "@types/node": "^22.20.2",
+    "@types/pg": "^8.23.1",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.17.0",
     "prettier": "^3.9.5",
-    "tsx": "^4.19.2",
+    "tsx": "^4.23.13",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.1",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^2.1.8"
   },
   "engines": {
