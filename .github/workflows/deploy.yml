@@ -49,7 +49,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2.1.5
+        uses: aws-actions/amazon-ecr-login@v2.2.0
 
       # main => produção (só via workflow_dispatch manual, nunca em push); qualquer
       # outra ref (na prática, só `development`) => development.
